@@ -1,0 +1,76 @@
+import { useState } from 'react'
+import { View, Text, TextInput, Pressable, Alert } from 'react-native'
+import { Link } from 'expo-router'
+import { supabase } from '@/lib/supabase'
+
+export default function RegisterScreen() {
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleRegister() {
+    setLoading(true)
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } }
+    })
+    if (error) {
+      Alert.alert('Erro', error.message)
+    } else {
+      Alert.alert('Sucesso', 'Verifique seu email para confirmar o cadastro.')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <View className="flex-1 justify-center px-8 bg-white">
+      <Text className="text-3xl font-bold text-center mb-8 text-primary-600">
+        Criar Conta
+      </Text>
+
+      <TextInput
+        className="border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base"
+        placeholder="Nome completo"
+        value={fullName}
+        onChangeText={setFullName}
+      />
+
+      <TextInput
+        className="border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base"
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+      />
+
+      <TextInput
+        className="border border-gray-300 rounded-lg px-4 py-3 mb-6 text-base"
+        placeholder="Senha"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+
+      <Pressable
+        className="bg-primary-600 rounded-lg py-4 items-center mb-4"
+        onPress={handleRegister}
+        disabled={loading}
+      >
+        <Text className="text-white font-semibold text-base">
+          {loading ? 'Cadastrando...' : 'Cadastrar'}
+        </Text>
+      </Pressable>
+
+      <Link href="/(auth)/login" asChild>
+        <Pressable className="py-2 items-center">
+          <Text className="text-primary-600 text-base">
+            Já tem conta? Entrar
+          </Text>
+        </Pressable>
+      </Link>
+    </View>
+  )
+}

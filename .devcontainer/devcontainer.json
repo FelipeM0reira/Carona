@@ -1,0 +1,28 @@
+{
+  "name": "Carona",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "forwardPorts": [8081, 54321, 54323],
+  "portsAttributes": {
+    "8081": { "label": "Expo Web", "onAutoForward": "notify" },
+    "54321": { "label": "Supabase API" },
+    "54323": { "label": "Supabase Studio", "onAutoForward": "notify" }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "github.copilot"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+      }
+    }
+  }
+}
