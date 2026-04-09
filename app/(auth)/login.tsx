@@ -7,14 +7,19 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleLogin() {
+    setError('')
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password
     })
-    if (error) Alert.alert('Erro', error.message)
+    if (error) {
+      setError(error.message)
+      console.error('Login error:', error.message)
+    }
     setLoading(false)
   }
 
@@ -23,6 +28,10 @@ export default function LoginScreen() {
       <Text className="text-3xl font-bold text-center mb-8 text-primary-600">
         Carona
       </Text>
+
+      {error ? (
+        <Text className="text-red-500 text-center mb-4">{error}</Text>
+      ) : null}
 
       <TextInput
         className="border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base"
