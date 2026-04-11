@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import {
   View,
   Text,
-  TextInput,
-  Pressable,
-  Alert,
-  ScrollView
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native'
 import { createProfileService } from '@/lib/services/profiles'
 import { useAuth } from '@/lib/providers/AuthProvider'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { ProfileSkeleton } from '@/components/ui/Skeleton'
+import { showToast } from '@/components/ui/Toast'
 import type { Database } from '@/lib/supabase/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -35,8 +38,9 @@ export default function ProfileScreen() {
         })
       } catch (err) {
         console.error('Erro ao carregar perfil:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [user])
@@ -50,112 +54,107 @@ export default function ProfileScreen() {
         bio: form.bio || null,
         phone: form.phone || null
       })
-      Alert.alert('Sucesso', 'Perfil atualizado!')
+      showToast('success', 'Perfil atualizado!', 'Suas alterações foram salvas')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido'
-      Alert.alert('Erro', msg)
+      showToast('error', 'Erro ao salvar', msg)
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text>Carregando...</Text>
-      </View>
+      <ScrollView className="flex-1 bg-surface-50">
+        <ProfileSkeleton />
+      </ScrollView>
     )
   }
 
+  const isDriver = profile?.role === 'driver' || profile?.role === 'both'
+  const isPassenger = profile?.role === 'passenger' || profile?.role === 'both'
+
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerClassName="p-6">
-      <Text className="text-2xl font-bold text-gray-900 mb-2">
-        {profile?.full_name ?? 'Perfil'}
-      </Text>
-      <Text className="text-sm text-gray-500 mb-6">{user?.email}</Text>
-
-      <Text className="text-sm font-medium text-gray-700 mb-1">
-        Nome de Usuário
-      </Text>
-      <TextInput
-        className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
-        placeholder="@usuario"
-        value={form.username}
-        onChangeText={v => setForm(p => ({ ...p, username: v }))}
-        autoCapitalize="none"
-      />
-
-      <Text className="text-sm font-medium text-gray-700 mb-1">Bio</Text>
-      <TextInput
-        className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
-        placeholder="Fale um pouco sobre você"
-        value={form.bio}
-        onChangeText={v => setForm(p => ({ ...p, bio: v }))}
-        multiline
-        numberOfLines={3}
-      />
-
-      <Text className="text-sm font-medium text-gray-700 mb-1">Telefone</Text>
-      <TextInput
-        className="border border-gray-300 rounded-lg px-4 py-3 mb-6"
-        placeholder="(11) 99999-9999"
-        value={form.phone}
-        onChangeText={v => setForm(p => ({ ...p, phone: v }))}
-        keyboardType="phone-pad"
-      />
-
-      <View className="flex-row gap-2 mb-6">
-        <View
-          className={`px-3 py-1 rounded-full ${
-            profile?.role === 'driver' || profile?.role === 'both'
-              ? 'bg-primary-100'
-              : 'bg-gray-100'
-          }`}
-        >
-          <Text
-            className={
-              profile?.role === 'driver' || profile?.role === 'both'
-                ? 'text-primary-700 font-medium'
-                : 'text-gray-500'
-            }
-          >
-            Motorista
-          </Text>
-        </View>
-        <View
-          className={`px-3 py-1 rounded-full ${
-            profile?.role === 'passenger' || profile?.role === 'both'
-              ? 'bg-primary-100'
-              : 'bg-gray-100'
-          }`}
-        >
-          <Text
-            className={
-              profile?.role === 'passenger' || profile?.role === 'both'
-                ? 'text-primary-700 font-medium'
-                : 'text-gray-500'
-            }
-          >
-            Passageiro
-          </Text>
-        </View>
-      </View>
-
-      <Pressable
-        className="bg-primary-600 rounded-lg py-4 items-center mb-4"
-        onPress={handleSave}
-        disabled={saving}
+    <KeyboardAvoidingView
+      className="flex-1 bg-surface-50"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerClassName="pb-10 md:max-w-2xl md:mx-auto md:w-full"
+        keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-white font-semibold text-base">
-          {saving ? 'Salvando...' : 'Salvar Perfil'}
-        </Text>
-      </Pressable>
+        {/* Avatar header */}
+        <View className="bg-primary-600 pt-8 pb-12 items-center rounded-b-3xl">
+          <View className="w-20 h-20 rounded-full bg-white/20 items-center justify-center mb-3">
+            <Text className="text-3xl">
+              {profile?.full_name?.charAt(0)?.toUpperCase() ?? '?'}
+            </Text>
+          </View>
+          <Text className="text-white text-xl font-bold">
+            {profile?.full_name ?? 'Sem nome'}
+          </Text>
+          <Text className="text-primary-200 text-sm mt-0.5">{user?.email}</Text>
 
-      <Pressable
-        className="border border-red-300 rounded-lg py-4 items-center"
-        onPress={signOut}
-      >
-        <Text className="text-red-600 font-semibold text-base">Sair</Text>
-      </Pressable>
-    </ScrollView>
+          {/* Role badges */}
+          <View className="flex-row gap-2 mt-3">
+            <View
+              className={`px-3 py-1.5 rounded-full ${isDriver ? 'bg-white/20' : 'bg-white/10'}`}
+            >
+              <Text
+                className={`text-xs font-medium ${isDriver ? 'text-white' : 'text-primary-300'}`}
+              >
+                🚗 Motorista
+              </Text>
+            </View>
+            <View
+              className={`px-3 py-1.5 rounded-full ${isPassenger ? 'bg-white/20' : 'bg-white/10'}`}
+            >
+              <Text
+                className={`text-xs font-medium ${isPassenger ? 'text-white' : 'text-primary-300'}`}
+              >
+                👤 Passageiro
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Form card */}
+        <View className="mx-5 -mt-6 bg-white rounded-2xl p-5 shadow-sm border border-surface-100 mb-4">
+          <Input
+            label="Nome de Usuário"
+            icon="@"
+            placeholder="usuario"
+            value={form.username}
+            onChangeText={v => setForm(p => ({ ...p, username: v }))}
+            autoCapitalize="none"
+          />
+
+          <Input
+            label="Bio"
+            placeholder="Fale um pouco sobre você..."
+            value={form.bio}
+            onChangeText={v => setForm(p => ({ ...p, bio: v }))}
+            multiline
+            numberOfLines={3}
+          />
+
+          <Input
+            label="Telefone"
+            icon="📱"
+            placeholder="(11) 99999-9999"
+            value={form.phone}
+            onChangeText={v => setForm(p => ({ ...p, phone: v }))}
+            keyboardType="phone-pad"
+          />
+
+          <Button title="Salvar Perfil" onPress={handleSave} loading={saving} />
+        </View>
+
+        {/* Sign out */}
+        <View className="mx-5">
+          <Button title="Sair da Conta" variant="danger" onPress={signOut} />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
