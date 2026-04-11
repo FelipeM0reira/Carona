@@ -8,11 +8,15 @@ import {
   ActivityIndicator
 } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
-import { supabase } from '@/lib/supabase'
+import { createTripService } from '@/lib/services/trips'
+import { createBookingService } from '@/lib/services/bookings'
 import { useAuth } from '@/lib/providers/AuthProvider'
 import type { Database } from '@/lib/supabase/database.types'
 
 type Trip = Database['public']['Tables']['trips']['Row']
+
+const tripService = createTripService()
+const bookingService = createBookingService()
 
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -23,13 +27,12 @@ export default function TripDetailScreen() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      setTrip(data)
+      try {
+        const data = await tripService.getById(id)
+        setTrip(data)
+      } catch (err) {
+        console.error('Erro ao carregar viagem:', err)
+      }
       setLoading(false)
     }
     load()
@@ -44,18 +47,18 @@ export default function TripDetailScreen() {
     }
 
     setBooking(true)
-    const { error } = await supabase.from('bookings').insert({
-      trip_id: trip.id,
-      passenger_id: user.id,
-      luggage_size: luggageSize
-    })
-
-    if (error) {
-      Alert.alert('Erro', error.message)
-    } else {
+    try {
+      await bookingService.create({
+        trip_id: trip.id,
+        passenger_id: user.id,
+        luggage_size: luggageSize
+      })
       Alert.alert('Sucesso', 'Reserva solicitada!', [
         { text: 'OK', onPress: () => router.push('/(app)/bookings') }
       ])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      Alert.alert('Erro', msg)
     }
     setBooking(false)
   }

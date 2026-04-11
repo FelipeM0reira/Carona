@@ -7,11 +7,13 @@ import {
   Pressable
 } from 'react-native'
 import { Link } from 'expo-router'
-import { supabase } from '@/lib/supabase'
+import { createTripService } from '@/lib/services/trips'
 import { TripCard } from '@/components/TripCard'
 import type { Database } from '@/lib/supabase/database.types'
 
 type Trip = Database['public']['Tables']['trips']['Row']
+
+const tripService = createTripService()
 
 export default function TripsScreen() {
   const [trips, setTrips] = useState<Trip[]>([])
@@ -19,14 +21,12 @@ export default function TripsScreen() {
 
   const loadTrips = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*')
-      .eq('status', 'active')
-      .gt('departure_time', new Date().toISOString())
-      .order('departure_time', { ascending: true })
-
-    if (!error && data) setTrips(data)
+    try {
+      const data = await tripService.list({ availableOnly: true })
+      setTrips(data)
+    } catch (err) {
+      console.error('Erro ao carregar viagens:', err)
+    }
     setLoading(false)
   }, [])
 

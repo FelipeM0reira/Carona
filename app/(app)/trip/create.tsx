@@ -4,12 +4,13 @@ import {
   Text,
   TextInput,
   Pressable,
-  ScrollView,
-  Alert
+  ScrollView
 } from 'react-native'
 import { router } from 'expo-router'
-import { supabase } from '@/lib/supabase'
+import { createTripService, ValidationError } from '@/lib/services/trips'
 import { useAuth } from '@/lib/providers/AuthProvider'
+
+const tripService = createTripService()
 
 export default function CreateTripScreen() {
   const { user } = useAuth()
@@ -29,12 +30,15 @@ export default function CreateTripScreen() {
     luggageG: false
   })
 
+  const [error, setError] = useState('')
+
   function updateForm(field: string, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
   async function handleCreate() {
     if (!user) return
+    setError('')
 
     const luggage: string[] = []
     if (form.luggageP) luggage.push('P')
@@ -42,40 +46,46 @@ export default function CreateTripScreen() {
     if (form.luggageG) luggage.push('G')
 
     const totalSeats = parseInt(form.totalSeats, 10)
-    if (isNaN(totalSeats) || totalSeats < 1) {
-      Alert.alert('Erro', 'Número de assentos inválido.')
+
+    const parsedDate = new Date(form.departureTime)
+    if (isNaN(parsedDate.getTime())) {
+      setError('Data inválida. Use o formato: 2026-04-15T08:00')
       return
     }
 
     setLoading(true)
-    const { error } = await supabase.from('trips').insert({
-      driver_id: user.id,
-      origin_name: form.originName,
-      origin_lat: parseFloat(form.originLat),
-      origin_lng: parseFloat(form.originLng),
-      destination_name: form.destinationName,
-      destination_lat: parseFloat(form.destinationLat),
-      destination_lng: parseFloat(form.destinationLng),
-      departure_time: new Date(form.departureTime).toISOString(),
-      price_per_seat: parseFloat(form.pricePerSeat),
-      total_seats: totalSeats,
-      available_seats: totalSeats,
-      luggage_policy: luggage
-    })
-
-    if (error) {
-      Alert.alert('Erro', error.message)
-    } else {
-      Alert.alert('Sucesso', 'Viagem criada!', [
-        { text: 'OK', onPress: () => router.back() }
-      ])
+    try {
+      await tripService.create({
+        driver_id: user.id,
+        origin_name: form.originName,
+        origin_lat: parseFloat(form.originLat) || 0,
+        origin_lng: parseFloat(form.originLng) || 0,
+        destination_name: form.destinationName,
+        destination_lat: parseFloat(form.destinationLat) || 0,
+        destination_lng: parseFloat(form.destinationLng) || 0,
+        departure_time: parsedDate.toISOString(),
+        price_per_seat: parseFloat(form.pricePerSeat) || 0,
+        total_seats: totalSeats || 0,
+        available_seats: totalSeats || 0,
+        luggage_policy: luggage
+      })
+      router.back()
+    } catch (err) {
+      console.error('Erro ao criar viagem:', err)
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      setError(msg)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
     <ScrollView className="flex-1 bg-white" contentContainerClassName="p-6">
       <Text className="text-2xl font-bold text-gray-900 mb-6">Nova Viagem</Text>
+
+      {error ? (
+        <Text className="text-red-500 text-center mb-4">{error}</Text>
+      ) : null}
 
       <Text className="text-sm font-medium text-gray-700 mb-1">
         Cidade de Origem

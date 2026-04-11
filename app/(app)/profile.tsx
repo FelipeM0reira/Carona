@@ -7,11 +7,13 @@ import {
   Alert,
   ScrollView
 } from 'react-native'
-import { supabase } from '@/lib/supabase'
+import { createProfileService } from '@/lib/services/profiles'
 import { useAuth } from '@/lib/providers/AuthProvider'
 import type { Database } from '@/lib/supabase/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
+
+const profileService = createProfileService()
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth()
@@ -23,19 +25,16 @@ export default function ProfileScreen() {
   useEffect(() => {
     async function load() {
       if (!user) return
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (data) {
+      try {
+        const data = await profileService.getById(user.id)
         setProfile(data)
         setForm({
           username: data.username ?? '',
           bio: data.bio ?? '',
           phone: data.phone ?? ''
         })
+      } catch (err) {
+        console.error('Erro ao carregar perfil:', err)
       }
       setLoading(false)
     }
@@ -45,19 +44,16 @@ export default function ProfileScreen() {
   async function handleSave() {
     if (!user) return
     setSaving(true)
-    const { error } = await supabase
-      .from('profiles')
-      .update({
+    try {
+      await profileService.update(user.id, {
         username: form.username || null,
         bio: form.bio || null,
         phone: form.phone || null
       })
-      .eq('id', user.id)
-
-    if (error) {
-      Alert.alert('Erro', error.message)
-    } else {
       Alert.alert('Sucesso', 'Perfil atualizado!')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      Alert.alert('Erro', msg)
     }
     setSaving(false)
   }
