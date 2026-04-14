@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase/database.types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 type MessageRow = Database['public']['Tables']['messages']['Row']
 type MessageInsert = Database['public']['Tables']['messages']['Insert']
 
-export function createChatService(client: any = supabase) {
+export function createChatService(client: SupabaseClient<Database> = supabase) {
   return {
     /**
      * Fetch messages for a trip, ordered by creation time.
