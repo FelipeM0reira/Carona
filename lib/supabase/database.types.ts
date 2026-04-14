@@ -60,6 +60,9 @@ export interface Database {
           total_seats: number
           available_seats: number
           luggage_policy: string[]
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_name: string | null
           status: 'active' | 'completed' | 'cancelled'
           created_at: string
           updated_at: string
@@ -79,6 +82,9 @@ export interface Database {
           total_seats: number
           available_seats: number
           luggage_policy?: string[]
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_name?: string | null
           status?: 'active' | 'completed' | 'cancelled'
           created_at?: string
           updated_at?: string
@@ -98,6 +104,9 @@ export interface Database {
           total_seats?: number
           available_seats?: number
           luggage_policy?: string[]
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_name?: string | null
           status?: 'active' | 'completed' | 'cancelled'
           created_at?: string
           updated_at?: string
@@ -109,7 +118,8 @@ export interface Database {
           trip_id: string
           passenger_id: string
           luggage_size: 'P' | 'M' | 'G' | null
-          status: 'pending' | 'confirmed' | 'rejected' | 'cancelled'
+          status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'boarded' | 'no_show'
+          checked_in_at: string | null
           created_at: string
           updated_at: string
         }
@@ -118,7 +128,8 @@ export interface Database {
           trip_id: string
           passenger_id: string
           luggage_size?: 'P' | 'M' | 'G' | null
-          status?: 'pending' | 'confirmed' | 'rejected' | 'cancelled'
+          status?: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'boarded' | 'no_show'
+          checked_in_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -127,7 +138,8 @@ export interface Database {
           trip_id?: string
           passenger_id?: string
           luggage_size?: 'P' | 'M' | 'G' | null
-          status?: 'pending' | 'confirmed' | 'rejected' | 'cancelled'
+          status?: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'boarded' | 'no_show'
+          checked_in_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -171,6 +183,68 @@ export interface Database {
           total_trips: number
           avg_rating: number
           total_reviews: number
+        }
+      }
+    }
+      messages: {
+        Row: {
+          id: string
+          trip_id: string
+          sender_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          trip_id: string
+          sender_id: string
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          trip_id?: string
+          sender_id?: string
+          content?: string
+          created_at?: string
+        }
+      }
+      refund_events: {
+        Row: {
+          id: string
+          booking_id: string
+          trip_id: string
+          passenger_id: string
+          amount: number
+          refund_type: 'partial' | 'total'
+          status: 'pending' | 'processed' | 'failed'
+          reason: string
+          created_at: string
+          processed_at: string | null
+        }
+        Insert: {
+          id?: string
+          booking_id: string
+          trip_id: string
+          passenger_id: string
+          amount: number
+          refund_type: 'partial' | 'total'
+          status?: 'pending' | 'processed' | 'failed'
+          reason?: string
+          created_at?: string
+          processed_at?: string | null
+        }
+        Update: {
+          id?: string
+          booking_id?: string
+          trip_id?: string
+          passenger_id?: string
+          amount?: number
+          refund_type?: 'partial' | 'total'
+          status?: 'pending' | 'processed' | 'failed'
+          reason?: string
+          created_at?: string
+          processed_at?: string | null
         }
       }
     }
